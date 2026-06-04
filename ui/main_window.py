@@ -178,8 +178,10 @@ class MainWindow(QMainWindow):
             safe_name = "process"
             
         base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        logs_dir = os.path.join(base_dir, "logs")
+        os.makedirs(logs_dir, exist_ok=True)
         filename = f"{pid}-{safe_name}-usagemonitor.log"
-        output_path = os.path.join(base_dir, filename)
+        output_path = os.path.join(logs_dir, filename)
 
         self.monitor_thread = MonitorThread(pid, output_path)
         self.monitor_thread.finished.connect(self.on_monitoring_finished)
