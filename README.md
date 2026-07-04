@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![UI](https://img.shields.io/badge/UI-pywebview%20%2F%20WebView2-2ea043?logo=googlechrome&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-brightgreen)
+![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)
 
 </div>
 
@@ -99,8 +99,10 @@ Windows executable (bundling `web/` and the pywebview backend), and writes it to
 
 ## License
 
-Released under the **MIT License** — free to use, modify, and distribute, including in commercial and
-closed-source projects. See [LICENSE](LICENSE).
+Released under the **Apache License 2.0** — free to use, modify, and distribute, including in commercial
+projects. In return you must **preserve attribution**: keep the copyright and authorship notices and
+include the [NOTICE](NOTICE) file (crediting Mateusz Mazur / MAZNET as the author) with any copy or
+derivative work, and state any changes you make. See [LICENSE](LICENSE).
 
 ## Author
 
