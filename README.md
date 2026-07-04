@@ -1,133 +1,107 @@
+<div align="center">
+
 # UsageMonitor
 
-> Real-time CPU & RAM usage monitor for any selected process — built with Python and PySide6.
+**Real-time CPU & RAM monitor for any process** — a small Python core with a fully web-based (HTML/CSS/JS) interface rendered in a native window.
 
-![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)
-![PySide6](https://img.shields.io/badge/PySide6-Qt6-green?logo=qt&logoColor=white)
-![Platform](https://img.shields.io/badge/platform-Windows-lightblue?logo=windows&logoColor=white)
-![License](https://img.shields.io/badge/license-Proprietary-lightgrey)
-![Author](https://img.shields.io/badge/author-MAZNET-orange)
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![UI](https://img.shields.io/badge/UI-pywebview%20%2F%20WebView2-2ea043?logo=googlechrome&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-brightgreen)
+
+</div>
 
 ---
+
+## Overview
+
+Point UsageMonitor at a running process (by PID or picked from a list) and watch its CPU and RAM usage
+live. When you stop, you get a clean report with charts — and every session is also saved as a
+**self-contained HTML file** you can open in any browser, offline, showing the full sample log together
+with the same summary and charts.
+
+No Qt, no bundled Chromium: the UI is plain HTML/CSS/JS rendered through the OS **Edge WebView2** runtime.
+The chart engine and report renderer are shared verbatim between the live app and the exported files.
 
 ## Features
 
-- **Process selection** — pick any running process from a filterable list
-- **Live monitoring** — real-time CPU and RAM usage with elapsed-time counter
-- **Interactive charts** — visualise CPU/RAM history after a monitoring session
-- **Session summary** — min/max/average statistics shown when monitoring stops
-- **Log export** — session data saved automatically to the `logs/` folder as `.log` files
-- **CSV export** — export collected samples with a statistical summary
-- **Dark UI** — custom dark theme built with PySide6 / Qt stylesheets
-
----
+- **Bilingual** — Polish / English, switchable at runtime; the exported report ships with its own toggle
+- **Pick any process** — searchable list, or type a PID directly
+- **Live monitoring** — real-time CPU (per-core & total) and RAM charts with an elapsed timer
+- **Interactive charts** — custom SVG line charts with crosshair + tooltip, theme-aware
+- **Polished report** — summary tiles (min / avg / max) and charts on stop
+- **HTML export** — each session saved to `logs/` as a standalone `.html`: full log **+** summary **+** charts, light/dark aware, works offline
+- **Zero web dependencies** — everything is inlined; nothing is fetched at runtime
 
 ## Requirements
 
 | Dependency | Version |
 |------------|---------|
 | Python     | 3.11+   |
-| PySide6    | latest  |
+| pywebview  | latest  |
 | psutil     | latest  |
 
----
+> On Windows, pywebview uses the **Edge WebView2** runtime, preinstalled on Windows 10/11.
 
-## Installation
-
-**1. Clone the repository**
+## Getting started
 
 ```bash
 git clone https://github.com/maznet/UsageMonitor.git
 cd UsageMonitor
-```
-
-**2. (Optional) Create a virtual environment**
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate   # Windows
-```
-
-**3. Install dependencies**
-
-```bash
+python -m venv .venv && .venv\Scripts\activate     # Windows
 pip install -r requirements.txt
-```
-
----
-
-## Usage
-
-```bash
 python main.py
 ```
 
-1. Click **"Wybierz proces"** and pick a process from the list.
-2. Click **"Start"** to begin monitoring.
-3. Click **"Stop"** to end the session — a summary and charts will be available.
-4. Log files are saved in the `logs/` folder automatically.
+1. Click **Wybierz program** and pick a process (or type a PID).
+2. Click **Rozpocznij monitoring** — live charts and a timer appear.
+3. Click **Zatrzymaj monitoring** — the report is shown.
+4. Open the exported **HTML report** from the app, or find it in `logs/`.
 
----
-
-## Project Structure
+## Project structure
 
 ```
 UsageMonitor/
-├── main.py               # Entry point
+├── main.py               # Entry point — creates the pywebview window
 ├── requirements.txt
 ├── version.txt           # PyInstaller version metadata
-├── build.ps1             # PowerShell build script
-├── assets/
-│   ├── icon.png
-│   └── icon.ico
+├── build.ps1             # One-command Windows build script
+├── assets/               # App icon
 ├── core/
-│   ├── constants.py      # App-wide constants
-│   ├── monitor.py        # Monitoring logic (background thread)
-│   └── utils.py          # Helper utilities
-├── theme/
-│   ├── theme.py          # Theme configuration
-│   └── global_qss.py     # Qt stylesheet
-├── ui/
-│   ├── main_window.py    # Main application window
-│   ├── charts.py         # Charts dialog
-│   └── dialogs.py        # Process selection & summary dialogs
-└── logs/                 # Auto-created; stores session log files
+│   ├── api.py            # JS <-> Python bridge (js_api)
+│   ├── monitor.py        # Sampling loop (background thread, no GUI deps)
+│   ├── report.py         # Builds the self-contained HTML report
+│   ├── constants.py
+│   └── utils.py          # Resource paths & process list
+└── web/                  # The entire user interface
+    ├── index.html        # App shell (single page)
+    ├── theme.css         # Shared design system (app + report)
+    ├── app.css / app.js  # App-shell styles & logic
+    ├── charts.js         # Shared SVG chart engine
+    └── report.js         # Shared report/summary renderer
 ```
 
----
+`web/charts.js` and `web/report.js` are shared: the same code renders charts in the live app, in the
+in-app report, and inside every exported HTML file.
 
-## Building an Executable (.exe)
-
-The included `build.ps1` script handles everything automatically:
+## Building an executable
 
 ```powershell
 .\build.ps1
 ```
 
-The script will:
-1. Auto-detect the Python interpreter
-2. Ask for a version number (updates `version.txt` automatically)
-3. Install `requirements.txt` and `PyInstaller`
-4. Compile a single-file Windows executable
-5. Move the result to `exec/UsageMonitor-{version}.exe`
-6. Clean up temporary build files
+Auto-detects Python, asks for a version, installs dependencies + PyInstaller, compiles a single-file
+Windows executable (bundling `web/` and the pywebview backend), and writes it to
+`exec/UsageMonitor-{version}.exe`.
 
-> **Note:** If PowerShell blocks script execution, run once:
-> ```powershell
-> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-> ```
-
----
+> If PowerShell blocks script execution, run once:
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 ## License
 
-This project is proprietary software.  
-© 2026 [MAZNET (Mateusz Mazur)](https://maznet.pl) — All rights reserved.
-
----
+Released under the **MIT License** — free to use, modify, and distribute, including in commercial and
+closed-source projects. See [LICENSE](LICENSE).
 
 ## Author
 
-**MAZNET** — Mateusz Mazur  
-🌐 [maznet.pl](https://maznet.pl)  
-📧 mateusz@maznet.pl
+**Mateusz Mazur** (MAZNET) · [maznet.pl](https://maznet.pl)

@@ -1,49 +1,27 @@
-###############################################
-#     _____ _____ _____ _____ _____ _____     #
-#    |     |  _  |__   |   | |   __|_   _|    #
-#    | | | |     |   __| | | |   __| | |      #
-#    |_|_|_|__|__|_____|_|___|_____| |_|      #
-#                                             #
-#          Copyright (c) 2026 MAZNET          #
-#       Author: MAZNET (Mateusz Mazur)        #
-#                                             #
-###############################################
+import webview
 
-# ============================================================
-# IMPORTY
-# ============================================================
-import sys
-import os
-from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QIcon
+from core.api import Api
+from core.utils import resource_path
+from core.constants import APP_NAME, get_full_version, WINDOW_WIDTH, WINDOW_HEIGHT
 
-from ui.main_window import MainWindow
-from theme.global_qss import get_stylesheet
 
-# ============================================================
-# POMOCNICZA FUNKCJA DO ZASOBÓW (PyInstaller-safe)
-# ============================================================
-def resource_path(relative_path):
-    if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.abspath("."), relative_path)
-
-# ============================================================
-# GŁÓWNY RDZEŃ PROGRAMU
-# ============================================================
 def main():
-    app = QApplication(sys.argv)
+    api = Api()
 
-    # === IKONA APLIKACJI ===
-    app.setWindowIcon(QIcon(resource_path("assets/icon.ico")))
+    window = webview.create_window(
+        title=f"{APP_NAME} {get_full_version()}",
+        url=resource_path("web/index.html"),
+        js_api=api,
+        width=WINDOW_WIDTH,
+        height=WINDOW_HEIGHT,
+        min_size=(WINDOW_WIDTH, WINDOW_HEIGHT),  # can't shrink below the initial size
+        background_color="#0b0d11",
+        text_select=False,
+    )
+    api.set_window(window)
 
-    # === Ładowanie stylów ===
-    app.setStyleSheet(get_stylesheet())
+    webview.start(gui="edgechromium")
 
-    window = MainWindow()
-    window.show()
-
-    sys.exit(app.exec())
 
 if __name__ == "__main__":
     main()

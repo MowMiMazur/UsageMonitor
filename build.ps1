@@ -1,14 +1,3 @@
-###############################################
-#     _____ _____ _____ _____ _____ _____     #
-#    |     |  _  |__   |   | |   __|_   _|    #
-#    | | | |     |   __| | | |   __| | |      #
-#    |_|_|_|__|__|_____|_|___|_____| |_|      #
-#                                             #
-#          Copyright (c) 2026 MAZNET          #
-#       Author: MAZNET (Mateusz Mazur)        #
-#                                             #
-###############################################
-
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
@@ -90,6 +79,18 @@ function Update-VersionFile([string]$version) {
     Write-OK "version.txt zaktualizowany -> $version"
 }
 
+# --------------------------------------------------------------
+# AKTUALIZACJA WERSJI W GUI (core/constants.py)
+# --------------------------------------------------------------
+function Update-ConstantsVersion([string]$version) {
+    $path = "core\constants.py"
+    if (-not (Test-Path $path)) { Write-Warn "Nie znaleziono $path -- pominieto"; return }
+    $content = Get-Content $path -Raw
+    $content = [regex]::Replace($content, '(?m)^(VERSION\s*=\s*")[^"]*(")', "`${1}$version`${2}")
+    [System.IO.File]::WriteAllText((Resolve-Path $path), $content, (New-Object System.Text.UTF8Encoding($false)))
+    Write-OK "core/constants.py zaktualizowany -> $version"
+}
+
 # ==============================================================
 # GLOWNA LOGIKA
 # ==============================================================
@@ -121,6 +122,7 @@ Write-Warn "Budowanie wersji: $version"
 Write-Host ""
 
 Update-VersionFile $version
+Update-ConstantsVersion $version
 
 # --- [1/4] Instalacja zaleznosci ---
 Write-Step "[1/4] Instalacja zaleznosci..."
@@ -144,9 +146,8 @@ $args = @(
     "--name=UsageMonitor",
     "--version-file=version.txt",
     "--add-data=assets;assets",
-    "--add-data=theme;theme",
-    "--add-data=core;core",
-    "--add-data=ui;ui"
+    "--add-data=web;web",
+    "--collect-all=webview"
 )
 if (Test-Path "assets\icon.ico") { $args += "--icon=assets\icon.ico" }
 $args += "main.py"

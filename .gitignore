@@ -29,3 +29,9 @@ Desktop.ini
 # PyInstaller
 *.manifest
 *.exe
+
+# Build output
+exec/
+
+# Generated session reports
+logs/
