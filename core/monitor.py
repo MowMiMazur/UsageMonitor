@@ -1,165 +1,133 @@
-###############################################
-#     _____ _____ _____ _____ _____ _____     #
-#    |     |  _  |__   |   | |   __|_   _|    #
-#    | | | |     |   __| | | |   __| | |      #
-#    |_|_|_|__|__|_____|_|___|_____| |_|      #
-#                                             #
-#          Copyright (c) 2026 MAZNET          #
-#       Author: MAZNET (Mateusz Mazur)        #
-#                                             #
-###############################################
-
-
-# ============================================================
-# IMPORTY
-# ============================================================
-import psutil
 import time
+import threading
+import psutil
 from statistics import mean
-from PySide6.QtCore import QThread, Signal
 
-# ============================================================
-# MONITOROWANIE PROCESU
-# ============================================================
-class MonitorThread(QThread):
-    finished = Signal(dict)
-    error = Signal(str)
-    
-    def __init__(self, pid, output_file, interval=1):
-        super().__init__()
+from core.constants import APP_NAME, get_full_version, AUTHOR_NAME, AUTHOR_URL
+
+
+class Monitor:
+    """Samples a process's CPU/RAM usage on a background thread.
+
+    Reports through callbacks: on_sample(dict), on_finished(report), on_error(str).
+    """
+
+    def __init__(self, pid, proc_name="proces", interval=1.0):
         self.pid = pid
-        self.output_file = output_file
-        self.interval = interval
-        self._is_running = True
-        
-        self.cpu_raw_samples = []
-        self.cpu_norm_samples = []
-        self.ram_samples = []
-        self.cpu_count = psutil.cpu_count(logical=True)
-        
+        self.proc_name = proc_name
+        self.interval = float(interval)
+
+        self.on_sample = None
+        self.on_finished = None
+        self.on_error = None
+
+        self._stop = threading.Event()
+        self._thread = None
+
+        self.cpu_count = psutil.cpu_count(logical=True) or 1
+        self.series = {"t": [], "cpu_raw": [], "cpu_norm": [], "ram": []}
         self.start_time = None
         self.end_time = None
 
-    def run(self):
+    def start(self):
+        self._thread = threading.Thread(target=self._run, name="usagemonitor", daemon=True)
+        self._thread.start()
+
+    def stop(self):
+        self._stop.set()
+
+    def _run(self):
         try:
-            process = psutil.Process(self.pid)
+            proc = psutil.Process(self.pid)
         except psutil.NoSuchProcess:
-            self.error.emit(f"Proces o PID {self.pid} nie istnieje lub zakończył działanie.")
+            self._safe(self.on_error, {"code": "process_missing", "pid": self.pid})
             return
 
         self.start_time = time.time()
-        
+
         try:
-            with open(self.output_file, "w", encoding="utf-8") as f:
-                f.write("timestamp,cpu_raw_percent,cpu_normalized_percent,ram_mb\n")
-                
-                # === Inicjalizacja licznika CPU ===
-                process.cpu_percent(interval=None)
+            proc.cpu_percent(interval=None)  # prime the CPU counter (first read is always 0)
 
-                while self._is_running:
-                    if not process.is_running():
-                        break
+            while not self._stop.is_set():
+                if self._stop.wait(self.interval):  # sleep, but return immediately on stop
+                    break
+                if not proc.is_running():
+                    break
 
-                    try:
-                        cpu_raw = process.cpu_percent(interval=None)
-                        cpu_norm = cpu_raw / self.cpu_count
-                        ram = process.memory_info().rss / (1024 * 1024)
+                try:
+                    cpu_raw = proc.cpu_percent(interval=None)
+                    cpu_norm = cpu_raw / self.cpu_count
+                    ram = proc.memory_info().rss / (1024 * 1024)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    break
 
-                        self.cpu_raw_samples.append(cpu_raw)
-                        self.cpu_norm_samples.append(cpu_norm)
-                        self.ram_samples.append(ram)
+                t = time.strftime("%H:%M:%S")
+                self.series["t"].append(t)
+                self.series["cpu_raw"].append(round(cpu_raw, 2))
+                self.series["cpu_norm"].append(round(cpu_norm, 2))
+                self.series["ram"].append(round(ram, 2))
 
-                        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-                        f.write(
-                            f"{timestamp},"
-                            f"{cpu_raw:.2f},"
-                            f"{cpu_norm:.2f},"
-                            f"{ram:.2f}\n"
-                        )
-                        f.flush()
-                        
-                        # === Czekaj z możliwością wcześniejszego przerwania ===
-                        for _ in range(int(self.interval * 10)):
-                            if not self._is_running:
-                                break
-                            time.sleep(0.1)
-                            
-                    except (psutil.NoSuchProcess, psutil.AccessDenied):
-                        break
+                self._safe(self.on_sample, {
+                    "t": t,
+                    "cpu_raw": round(cpu_raw, 2),
+                    "cpu_norm": round(cpu_norm, 2),
+                    "ram": round(ram, 2),
+                })
         except Exception as e:
-            self.error.emit(str(e))
+            self._safe(self.on_error, {"code": "generic", "detail": str(e)})
             return
 
         self.end_time = time.time()
-        self.compute_stats()
+        self._safe(self.on_finished, self.build_report())
 
-    # === Metoda do zatrzymania monitorowania ===
-    def stop(self):
-        self._is_running = False
-
-    # === Obliczanie statystyk po zakończeniu monitorowania ===
-    def compute_stats(self):
-        stats_data = {}
-        
-        # === Funkcja pomocnicza do obliczania min, max, średniej ===
-        def calculate(values):
+    def build_report(self):
+        def stat(values):
             if not values:
-                return 0.0, 0.0, 0.0
-            return min(values), max(values), mean(values)
+                return {"min": 0.0, "max": 0.0, "avg": 0.0}
+            return {"min": round(min(values), 2), "max": round(max(values), 2), "avg": round(mean(values), 2)}
 
-        if self.cpu_raw_samples:
-            cpu_raw_stats = calculate(self.cpu_raw_samples)
-            cpu_norm_stats = calculate(self.cpu_norm_samples)
-            ram_stats = calculate(self.ram_samples)
+        has_data = len(self.series["t"]) > 0
 
-            stats_data['cpu_raw'] = cpu_raw_stats
-            stats_data['cpu_norm'] = cpu_norm_stats
-            stats_data['ram'] = ram_stats
-            
-            # === Przekazanie próbek do wykresów ===
-            stats_data['samples'] = {
-                'cpu_raw': self.cpu_raw_samples,
-                'cpu_norm': self.cpu_norm_samples,
-                'ram': self.ram_samples
-            }
-            
-            stats_data['has_data'] = True
-            stats_data['output_file'] = self.output_file
+        start_ts = self.start_time or time.time()
+        end_ts = self.end_time or time.time()
+        duration = max(0, int(end_ts - start_ts))
+        h, rem = divmod(duration, 3600)
+        m, s = divmod(rem, 60)
+        duration_str = (f"{h}h {m}m {s}s" if h else (f"{m}m {s}s" if m else f"{s}s"))
 
-            # === Obliczanie czasów ===
-            start_ts = self.start_time if self.start_time else 0
-            end_ts = self.end_time if self.end_time else time.time()
-            duration_seconds = end_ts - start_ts
-            
-            start_str = time.strftime("%H:%M:%S", time.localtime(start_ts))
-            end_str = time.strftime("%H:%M:%S", time.localtime(end_ts))
-            
-            m, s = divmod(int(duration_seconds), 60)
-            h, m = divmod(m, 60)
-            duration_str = f"{h}h {m}m {s}s" if h > 0 else f"{m}m {s}s"
+        return {
+            "has_data": has_data,
+            "meta": {
+                "app": APP_NAME,
+                "version": get_full_version(),
+                "pid": self.pid,
+                "proc_name": self.proc_name,
+                "cpu_count": self.cpu_count,
+                "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "author_name": AUTHOR_NAME,
+                "author_url": AUTHOR_URL,
+                "output_file": "",
+            },
+            "session": {
+                "start": time.strftime("%H:%M:%S", time.localtime(start_ts)),
+                "end": time.strftime("%H:%M:%S", time.localtime(end_ts)),
+                "duration_str": duration_str,
+                "duration_seconds": duration,
+                "samples": len(self.series["t"]),
+                "interval": self.interval,
+            },
+            "stats": {
+                "cpu_raw": stat(self.series["cpu_raw"]),
+                "cpu_norm": stat(self.series["cpu_norm"]),
+                "ram": stat(self.series["ram"]),
+            },
+            "series": self.series,
+        }
 
-            stats_data['start_str'] = start_str
-            stats_data['end_str'] = end_str
-            stats_data['duration_str'] = duration_str
-
-            # === Zapisz podsumowanie do pliku ===
+    @staticmethod
+    def _safe(cb, arg):
+        if cb:
             try:
-                with open(self.output_file, "a", encoding="utf-8") as f:
-                    f.write("\n")
-                    f.write("=" * 40 + "\n")
-                    f.write("           PODSUMOWANIE SESJI\n")
-                    f.write("=" * 40 + "\n")
-                    f.write(f"Start: {start_str} | Koniec: {end_str} | Czas: {duration_str}\n")
-                    f.write("-" * 40 + "\n")
-                    f.write(f"CPU (Raw):   Min: {cpu_raw_stats[0]:6.2f}% | Max: {cpu_raw_stats[1]:6.2f}% | Śr: {cpu_raw_stats[2]:6.2f}%\n")
-                    f.write(f"CPU (Norm):  Min: {cpu_norm_stats[0]:6.2f}% | Max: {cpu_norm_stats[1]:6.2f}% | Śr: {cpu_norm_stats[2]:6.2f}%\n")
-                    f.write(f"RAM:         Min: {ram_stats[0]:6.2f} MB | Max: {ram_stats[1]:6.2f} MB | Śr: {ram_stats[2]:6.2f} MB\n")
-                    f.write("=" * 40 + "\n")
-            except Exception as e:
-                # Nie chcemy, aby błąd zapisu statystyk przerwał działanie programu
-                print(f"Błąd podczas zapisywania statystyk do pliku: {e}")
-
-        else:
-            stats_data['has_data'] = False
-            
-        self.finished.emit(stats_data)
+                cb(arg)
+            except Exception:
+                pass
