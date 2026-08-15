@@ -1,8 +1,11 @@
+<a name="top"></a>
 <div align="center">
 
-<h1 align="center">
-  <img src="assets/icon.png" alt="" width="38" align="absmiddle" />&nbsp;UsageMonitor
-</h1>
+<p align="center">
+  <img src="assets/icon.png" alt="UsageMonitor" width="90" />
+</p>
+
+<h1 align="center">UsageMonitor</h1>
 
 **Monitor CPU i RAM dowolnego procesu w czasie rzeczywistym**<br />
 **Real-time CPU &amp; RAM monitor for any process**
@@ -122,7 +125,7 @@ wprowadzone przez siebie zmiany. Szczegóły w pliku [LICENSE](LICENSE).
 
 **Mateusz Mazur** (MAZNET) · [maznet.pl](https://maznet.pl)
 
-<div align="right"><a href="#usagemonitor">↑ do góry</a></div>
+<div align="right"><a href="#top">↑ do góry</a></div>
 
 ---
 
@@ -226,4 +229,4 @@ derivative work, and state any changes you make. See [LICENSE](LICENSE).
 
 **Mateusz Mazur** (MAZNET) · [maznet.pl](https://maznet.pl)
 
-<div align="right"><a href="#usagemonitor">↑ back to top</a></div>
+<div align="right"><a href="#top">↑ back to top</a></div>
