@@ -1,12 +1,11 @@
 <div align="center">
 
-<h1>
-  <img src="assets/icon.png" alt="" width="42" align="center" />
-  UsageMonitor
+<h1 align="center">
+  <img src="assets/icon.png" alt="" width="38" align="absmiddle" />&nbsp;UsageMonitor
 </h1>
 
-**Monitor CPU i RAM dowolnego procesu w czasie rzeczywistym**
-**Real-time CPU & RAM monitor for any process**
+**Monitor CPU i RAM dowolnego procesu w czasie rzeczywistym**<br />
+**Real-time CPU &amp; RAM monitor for any process**
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![UI](https://img.shields.io/badge/UI-pywebview%20%2F%20WebView2-2ea043?logo=googlechrome&logoColor=white)
