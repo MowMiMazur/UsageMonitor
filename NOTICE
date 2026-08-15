@@ -21,3 +21,27 @@ o prawach autorskich, zgodnie z sekcją 4 Licencji.
 
 Powyższe tłumaczenie ma charakter wyłącznie informacyjny — wiążąca jest wersja
 angielska Licencji.
+
+--------------------------------------------------------------------------------
+Third-party components / Komponenty firm trzecich
+--------------------------------------------------------------------------------
+The source tree of this product contains no third-party code — the bundled web
+assets (charts, i18n, report) are dependency-free and authored by the copyright
+holder above.
+
+The distributed Windows executable, built with PyInstaller, additionally embeds
+the following components, each under its own license:
+
+  * pywebview — BSD 3-Clause License
+    Copyright (c) 2014-2025 Roman Sirokov and contributors
+    https://github.com/r0x0r/pywebview
+
+  * psutil — BSD 3-Clause License
+    Copyright (c) 2009, Jay Loden, Dave Daeschler, Giampaolo Rodola
+    https://github.com/giampaolo/psutil
+
+Drzewo źródeł tego produktu nie zawiera kodu firm trzecich — dołączone zasoby
+webowe są bezzależnościowe i napisane przez powyższego właściciela praw
+autorskich. Dystrybuowany plik wykonywalny dla Windows, zbudowany za pomocą
+PyInstallera, zawiera dodatkowo wymienione wyżej komponenty, każdy na warunkach
+własnej licencji.
