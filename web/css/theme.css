@@ -24,6 +24,7 @@
   --c-cpu:   #d95926;   /* CPU per core */
   --c-cput:  #e66767;   /* CPU total */
   --c-ram:   #3987e5;   /* RAM */
+  --c-procs: #a879e8;   /* process count (group sessions) */
 
   /* Chart chrome */
   --grid:     #20252f;
@@ -55,6 +56,7 @@
     --c-cpu:  #eb6834;
     --c-cput: #e34948;
     --c-ram:  #2a78d6;
+    --c-procs: #7c4ddb;
     --grid:   #ececea;
     --axis:   #d7d8d3;
   }
@@ -368,6 +370,59 @@ table.logtable td:first-child { color: var(--text); }
   border-radius: 999px;
 }
 .report-logs .logtable-wrap { border: none; border-top: 1px solid var(--border); border-radius: 0; }
+
+/* Per-process breakdown (group sessions) */
+.report-procs {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.procs-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px 0;
+}
+.procs-head .count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+.procs-note { color: var(--muted); font-size: 12px; margin: 4px 18px 12px; }
+.report-procs .logtable-wrap { border: none; border-top: 1px solid var(--border); border-radius: 0; }
+
+table.procs-table td.pname { color: var(--text); }
+table.procs-table td.pname .ppid {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 8px;
+}
+table.procs-table td.share {
+  position: relative;
+  min-width: 84px;
+  color: var(--text);
+}
+table.procs-table td.share .bar {
+  position: absolute;
+  left: 16px; right: 16px; bottom: 3px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+table.procs-table td.share .bar i {
+  display: block;
+  height: 100%;
+  background: var(--c-procs);
+  border-radius: 2px;
+}
 
 @media (max-width: 620px) {
   .report-tiles { grid-template-columns: repeat(2, 1fr); }

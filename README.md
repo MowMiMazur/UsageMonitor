@@ -41,9 +41,11 @@ w niezmienionej postaci między aplikacją a eksportowanymi plikami.
 
 - **Dwujęzyczność** — polski / angielski, przełączane w trakcie działania; eksportowany raport ma własny przełącznik
 - **Dowolny proces** — lista z wyszukiwarką albo ręcznie wpisany PID
+- **Grupy procesów** — zmierz Firefoksa, Chrome'a czy VS Code jako całość: wszystkie procesy o tej samej nazwie, całe drzewo procesu albo ręcznie zaznaczony zestaw
 - **Monitorowanie na żywo** — wykresy CPU (na rdzeń i całkowite) oraz RAM z licznikiem czasu
 - **Interaktywne wykresy** — autorskie wykresy SVG z celownikiem i dymkiem, dopasowane do motywu
 - **Dopracowany raport** — kafelki podsumowania (min / śr / maks) i wykresy po zatrzymaniu
+- **Udział procesów** — przy grupie raport pokazuje, który proces ile zużywał i za jaką część obciążenia odpowiadał
 - **Eksport HTML** — każda sesja trafia do `logs/` jako samodzielny plik `.html`: pełny dziennik **+** podsumowanie **+** wykresy, obsługa trybu jasnego i ciemnego, działa offline
 - **Zero zależności webowych** — wszystko jest wbudowane w plik; nic nie jest pobierane w trakcie działania
 
@@ -68,9 +70,10 @@ python main.py
 ```
 
 1. Kliknij **Wybierz program** i wskaż proces (albo wpisz PID).
-2. Kliknij **Rozpocznij monitoring** — pojawią się wykresy na żywo i licznik czasu.
-3. Kliknij **Zatrzymaj monitoring** — wyświetli się raport.
-4. Otwórz eksportowany **raport HTML** z poziomu aplikacji albo znajdź go w katalogu `logs/`.
+2. Wybierz **zakres**: jeden proces, wszystkie o tej samej nazwie, proces z potomkami albo ręcznie zaznaczone.
+3. Kliknij **Rozpocznij monitoring** — pojawią się wykresy na żywo i licznik czasu.
+4. Kliknij **Zatrzymaj monitoring** — wyświetli się raport.
+5. Otwórz eksportowany **raport HTML** z poziomu aplikacji albo znajdź go w katalogu `logs/`.
 
 ### Struktura projektu
 
@@ -85,6 +88,7 @@ UsageMonitor/
 │   ├── api.py            # Most JS <-> Python (js_api)
 │   ├── monitor.py        # Pętla próbkowania (wątek w tle, bez zależności GUI)
 │   ├── report.py         # Buduje samodzielny raport HTML
+│   ├── group.py          # Rozwiązywanie grupy procesów (nazwa / drzewo / zestaw)
 │   ├── updates.py        # Sprawdzanie nowej wersji (API maznet.pl, cache + ETag)
 │   ├── constants.py
 │   └── utils.py          # Ścieżki zasobów, katalog danych i lista procesów
@@ -104,6 +108,31 @@ UsageMonitor/
 Pliki `web/js/charts.js`, `web/js/report.js` i `web/js/i18n.js` są współdzielone: ten sam kod rysuje
 wykresy, buduje podsumowania i tłumaczy interfejs w aplikacji, w raporcie w oknie programu oraz
 w każdym eksportowanym pliku HTML.
+
+### Monitorowanie grup procesów
+
+Nowoczesne przeglądarki i edytory działają jako kilkanaście procesów, więc pomiar jednego PID-u mówi
+niewiele. Poza trybem pojedynczego procesu UsageMonitor obsługuje trzy zakresy grupowe:
+
+| Zakres | Co obejmuje |
+|---|---|
+| **Ta sama nazwa** | wszystkie procesy o nazwie wskazanego procesu (np. każdy `firefox.exe`) |
+| **Z potomkami** | wskazany proces oraz całe jego drzewo procesów potomnych |
+| **Zaznaczone** | dowolny zestaw PID-ów zaznaczony ręcznie na liście |
+
+Skład grupy w trybach „ta sama nazwa" i „z potomkami" jest ustalany na nowo przy każdej próbce, więc
+procesy otwierane i zamykane w trakcie sesji (nowe karty przeglądarki) są uwzględniane. Tryb
+„z potomkami" zatrzymuje też procesy, których rodzic już zakończył działanie — Windows przypisuje
+sieroty do innego rodzica, a ich pominięcie po cichu zaniżałoby pomiar. Sesja kończy się sama, gdy
+zniknie ostatni proces z grupy.
+
+Wykresy pokazują sumę dla całej grupy, plus dodatkowy wykres liczby procesów w czasie. Pod nimi
+znajduje się tabela z rozbiciem na poszczególne procesy: średnie i maksymalne zużycie oraz udział
+w łącznym obciążeniu CPU.
+
+> **Uwaga o pamięci:** RAM grupy to suma RSS jej procesów. Procesy jednej aplikacji współdzielą
+> biblioteki i pamięć, więc ta sama pamięć bywa policzona wielokrotnie i wynik jest zawyżony.
+> Raport zaznacza to przy wykresie RAM.
 
 ### Sprawdzanie aktualizacji
 
@@ -161,9 +190,11 @@ The chart engine and report renderer are shared verbatim between the live app an
 
 - **Bilingual** — Polish / English, switchable at runtime; the exported report ships with its own toggle
 - **Pick any process** — searchable list, or type a PID directly
+- **Process groups** — measure Firefox, Chrome or VS Code as a whole: every process sharing a name, a full process tree, or a hand-picked set
 - **Live monitoring** — real-time CPU (per-core & total) and RAM charts with an elapsed timer
 - **Interactive charts** — custom SVG line charts with crosshair + tooltip, theme-aware
 - **Polished report** — summary tiles (min / avg / max) and charts on stop
+- **Per-process share** — for a group, the report shows which process used what and how much of the load it accounted for
 - **HTML export** — each session saved to `logs/` as a standalone `.html`: full log **+** summary **+** charts, light/dark aware, works offline
 - **Zero web dependencies** — everything is inlined; nothing is fetched at runtime
 
@@ -188,9 +219,10 @@ python main.py
 ```
 
 1. Click **Pick a program** and choose a process (or type a PID).
-2. Click **Start monitoring** — live charts and a timer appear.
-3. Click **Stop monitoring** — the report is shown.
-4. Open the exported **HTML report** from the app, or find it in `logs/`.
+2. Pick a **scope**: one process, every process with that name, a process and its descendants, or a hand-picked set.
+3. Click **Start monitoring** — live charts and a timer appear.
+4. Click **Stop monitoring** — the report is shown.
+5. Open the exported **HTML report** from the app, or find it in `logs/`.
 
 ### Project structure
 
@@ -205,6 +237,7 @@ UsageMonitor/
 │   ├── api.py            # JS <-> Python bridge (js_api)
 │   ├── monitor.py        # Sampling loop (background thread, no GUI deps)
 │   ├── report.py         # Builds the self-contained HTML report
+│   ├── group.py          # Process-group resolution (name / tree / set)
 │   ├── updates.py        # Version check (maznet.pl API, cache + ETag)
 │   ├── constants.py
 │   └── utils.py          # Resource paths, data dir & process list
@@ -223,6 +256,30 @@ UsageMonitor/
 
 `web/js/charts.js`, `web/js/report.js` and `web/js/i18n.js` are shared: the same code renders charts,
 summaries and translations in the live app, in the in-app report, and inside every exported HTML file.
+
+### Process-group monitoring
+
+Modern browsers and editors run as a dozen processes, so measuring a single PID tells you little.
+Beside the single-process mode, UsageMonitor supports three group scopes:
+
+| Scope | What it covers |
+|---|---|
+| **Same name** | every process sharing the picked process's name (e.g. each `firefox.exe`) |
+| **With children** | the picked process plus its entire descendant tree |
+| **Selected** | any set of PIDs ticked by hand in the list |
+
+In "same name" and "with children" the membership is re-resolved on every sample, so processes that
+open and close mid-session (new browser tabs) are counted. "With children" also keeps members whose
+parent has already exited — Windows reparents orphans, and dropping them would silently understate the
+measurement. The session ends by itself once the last member is gone.
+
+The charts show the group total, plus an extra chart tracking the process count over time. Below them
+a table breaks the session down per process: average and peak usage, and each one's share of the
+group's total CPU load.
+
+> **A note on memory:** group RAM is the sum of its members' RSS. Processes of one application share
+> libraries and memory, so the same pages get counted more than once and the figure runs high. The
+> report flags this next to the RAM chart.
 
 ### Update check
 

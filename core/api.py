@@ -4,9 +4,8 @@ import threading
 import webbrowser
 import subprocess
 
-import psutil
-
 from core import updates
+from core.group import ProcessGroup
 from core.monitor import Monitor
 from core.report import write_html_log
 from core.utils import get_process_list, app_base_dir
@@ -54,23 +53,40 @@ class Api:
         self._js(f"window.UM && UM.onUpdate({json.dumps(result, ensure_ascii=False)});")
 
     def get_process_list(self):
-        return [{"pid": pid, "name": name} for pid, name in get_process_list()]
+        return [{"pid": pid, "ppid": ppid, "name": name} for pid, ppid, name in get_process_list()]
 
-    def start_monitoring(self, pid):
+    def resolve_target(self, target):
+        """Preview a target without starting a session: how many processes it covers."""
         try:
-            pid = int(pid)
-        except (TypeError, ValueError):
+            group = ProcessGroup.from_spec(target)
+        except Exception:
+            return {"ok": False, "error_key": "invalid_pid"}
+        if group.mode == "single" and group.pid is None:
             return {"ok": False, "error_key": "invalid_pid"}
 
-        try:
-            proc = psutil.Process(pid)
-            proc_name = proc.name()
-        except psutil.NoSuchProcess:
-            return {"ok": False, "error_key": "process_missing", "pid": pid}
-        except psutil.AccessDenied:
-            proc_name = "process"
+        described = group.describe()
+        if not described["count"]:
+            return {"ok": False, "error_key": "process_missing", "pid": group.pid}
+        # A long list only feeds a preview chip; the session resolves membership itself.
+        described["members"] = described["members"][:200]
+        described["ok"] = True
+        return described
 
-        monitor = Monitor(pid, proc_name=proc_name)
+    def start_monitoring(self, target):
+        try:
+            group = ProcessGroup.from_spec(target)
+        except Exception:
+            return {"ok": False, "error_key": "invalid_pid"}
+        if group.mode == "single" and group.pid is None:
+            return {"ok": False, "error_key": "invalid_pid"}
+
+        described = group.describe()
+        if not described["count"]:
+            return {"ok": False, "error_key": "process_missing", "pid": group.pid}
+
+        proc_name = described["label"] or "process"
+
+        monitor = Monitor(group, proc_name=proc_name)
         monitor.on_sample = self._on_sample
         monitor.on_finished = self._on_finished
         monitor.on_error = self._on_error
@@ -79,8 +95,11 @@ class Api:
 
         return {
             "ok": True,
-            "pid": pid,
+            "pid": group.pid,
             "proc_name": proc_name,
+            "mode": group.mode,
+            "is_group": group.is_group,
+            "count": described["count"],
             "cpu_count": monitor.cpu_count,
         }
 

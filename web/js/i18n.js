@@ -54,6 +54,50 @@
       "modal.loadFail": "Nie udało się pobrać listy procesów.",
       "modal.noMatch": "Brak pasujących procesów.",
 
+      "modal.modeLabel": "Zakres",
+
+      "mode.single.short": "Jeden",
+      "mode.name.short": "Ta sama nazwa",
+      "mode.tree.short": "Z potomkami",
+      "mode.set.short": "Zaznaczone",
+      "mode.single.hint": "Mierzony będzie wyłącznie zaznaczony proces.",
+      "mode.name.hint": "Zaznacz jeden proces, a pomiar obejmie wszystkie o tej samej nazwie — łącznie z tymi, które pojawią się w trakcie.",
+      "mode.tree.hint": "Zaznacz proces nadrzędny, a pomiar obejmie jego oraz wszystkie procesy potomne, także uruchomione później.",
+      "mode.set.hint": "Zaznacz dowolne procesy z listy. Skład grupy nie zmienia się w trakcie pomiaru.",
+      "mode.name.label": "wszystkie procesy o tej nazwie",
+      "mode.tree.label": "proces wraz z potomkami",
+      "mode.set.label": "ręcznie zaznaczone procesy",
+      "mode.single.label": "pojedynczy proces",
+
+      "modal.summary.single": "Wybrano <b>{name}</b> · PID {pid}",
+      "modal.summary.group": "Wybrano <b>{name}</b> · {count}",
+      "modal.summary.none": "Nie wybrano jeszcze procesu.",
+      "modal.summary.checked": "Zaznaczono <b>{count}</b>",
+
+      "group.count.one": "{count} proces",
+      "group.count.few": "{count} procesy",
+      "group.count.many": "{count} procesów",
+      "group.clear": "Wyczyść wybór",
+
+      "metric.procs.name": "Liczba procesów",
+      "metric.procs.note": "ilu członków miała grupa w danej chwili",
+      "metric.ram.noteGroup": "suma RSS wszystkich procesów — pamięć współdzielona liczona wielokrotnie",
+
+      "procs.title": "Udział procesów",
+      "procs.note": "Średnie liczone z próbek, w których dany proces działał. Udział to jego część łącznego zużycia CPU przez grupę.",
+      "procs.others": "pozostałe procesy ({count})",
+      "procs.col.name": "Proces",
+      "procs.col.samples": "Próbek",
+      "procs.col.cpuAvg": "CPU śr. (%)",
+      "procs.col.cpuMax": "CPU maks. (%)",
+      "procs.col.ramAvg": "RAM śr. (MB)",
+      "procs.col.ramMax": "RAM maks. (MB)",
+      "procs.col.share": "Udział (%)",
+
+      "report.metaGroup": "grupa: {mode} · szczyt: {peak} · łącznie zaobserwowano: {seen}",
+
+      "toast.noneChecked": "Zaznacz przynajmniej jeden proces.",
+
       "metric.cpu_raw.name": "CPU — na rdzeń",
       "metric.cpu_raw.note": "sumaryczne obciążenie względem jednego rdzenia",
       "metric.cpu_norm.name": "CPU — całkowite",
@@ -147,6 +191,50 @@
       "modal.loadFail": "Failed to load the process list.",
       "modal.noMatch": "No matching processes.",
 
+      "modal.modeLabel": "Scope",
+
+      "mode.single.short": "One",
+      "mode.name.short": "Same name",
+      "mode.tree.short": "With children",
+      "mode.set.short": "Selected",
+      "mode.single.hint": "Only the selected process will be measured.",
+      "mode.name.hint": "Pick one process and the session covers every process sharing its name — including any that appear later.",
+      "mode.tree.hint": "Pick a parent process and the session covers it plus all of its descendants, including ones started later.",
+      "mode.set.hint": "Tick any processes in the list. The group stays fixed for the whole session.",
+      "mode.name.label": "every process with this name",
+      "mode.tree.label": "process and its descendants",
+      "mode.set.label": "hand-picked processes",
+      "mode.single.label": "a single process",
+
+      "modal.summary.single": "Selected <b>{name}</b> · PID {pid}",
+      "modal.summary.group": "Selected <b>{name}</b> · {count}",
+      "modal.summary.none": "No process selected yet.",
+      "modal.summary.checked": "Ticked <b>{count}</b>",
+
+      "group.count.one": "{count} process",
+      "group.count.few": "{count} processes",
+      "group.count.many": "{count} processes",
+      "group.clear": "Clear selection",
+
+      "metric.procs.name": "Process count",
+      "metric.procs.note": "how many members the group had at that moment",
+      "metric.ram.noteGroup": "summed RSS across the group — shared memory is counted more than once",
+
+      "procs.title": "Per-process share",
+      "procs.note": "Averages are taken over the samples in which each process was alive. Share is its slice of the group's total CPU usage.",
+      "procs.others": "remaining processes ({count})",
+      "procs.col.name": "Process",
+      "procs.col.samples": "Samples",
+      "procs.col.cpuAvg": "CPU avg (%)",
+      "procs.col.cpuMax": "CPU max (%)",
+      "procs.col.ramAvg": "RAM avg (MB)",
+      "procs.col.ramMax": "RAM max (MB)",
+      "procs.col.share": "Share (%)",
+
+      "report.metaGroup": "group: {mode} · peak: {peak} · {seen} seen in total",
+
+      "toast.noneChecked": "Tick at least one process.",
+
       "metric.cpu_raw.name": "CPU — per core",
       "metric.cpu_raw.note": "total load relative to a single core",
       "metric.cpu_norm.name": "CPU — total",
@@ -202,6 +290,23 @@
     return s;
   }
 
+  // Polish needs three plural forms (1 proces / 2-4 procesy / 5+ procesów);
+  // English only needs two. Keys are suffixed .one / .few / .many.
+  function pluralForm(n) {
+    n = Math.abs(Number(n) || 0);
+    if (lang !== "pl") return n === 1 ? "one" : "many";
+    if (n === 1) return "one";
+    const m10 = n % 10, m100 = n % 100;
+    return (m10 >= 2 && m10 <= 4 && !(m100 >= 12 && m100 <= 14)) ? "few" : "many";
+  }
+
+  /** Count-aware lookup: tn("group.count", 4) -> "4 procesy". */
+  function tn(baseKey, n, params) {
+    const p = params ? Object.assign({}, params) : {};
+    if (p.count == null) p.count = n;
+    return t(baseKey + "." + pluralForm(n), p);
+  }
+
   function apply(root) {
     root = root || document;
     root.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.getAttribute("data-i18n")); });
@@ -251,5 +356,5 @@
     return wrap;
   }
 
-  global.UMi18n = { t, apply, setLang, getLang, init, onChange, createToggle };
+  global.UMi18n = { t, tn, apply, setLang, getLang, init, onChange, createToggle };
 })(window);

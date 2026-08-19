@@ -83,16 +83,25 @@ def write_html_log(report, logs_dir=None, lang="pl"):
     meta = report.get("meta", {})
     pid = meta.get("pid", 0)
     proc_name = meta.get("proc_name", "process")
+    group = meta.get("group") or {}
 
     safe_name = "".join(c for c in proc_name if c.isalnum() or c in (" ", ".", "_", "-")).strip()
     safe_name = safe_name.replace(" ", "_") or "process"
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    out_path = os.path.join(logs_dir, f"{stamp}_{pid}-{safe_name}_usagemonitor.html")
+
+    # A group has no single PID to name the file after, so it carries its size instead.
+    if group.get("is_group"):
+        tag = f"grupa-x{group.get('peak', 0)}"
+        subject = f"{proc_name} ({group.get('peak', 0)} proc.)"
+    else:
+        tag = str(pid)
+        subject = f"{proc_name} (PID {pid})"
+    out_path = os.path.join(logs_dir, f"{stamp}_{tag}-{safe_name}_usagemonitor.html")
 
     document = _TEMPLATE.format(
         lang=html.escape(lang),
         lang_json=json.dumps(lang),
-        title=f"{APP_NAME} — {html.escape(proc_name)} (PID {pid})",
+        title=f"{APP_NAME} — {html.escape(subject)}",
         theme_css=_read_web("css/theme.css"),
         page_style=_PAGE_STYLE,
         i18n_js=_read_web("js/i18n.js"),

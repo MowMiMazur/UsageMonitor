@@ -1,7 +1,7 @@
 ﻿VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2,0,1,0),
-    prodvers=(2,0,1,0),
+    filevers=(2,0,2,0),
+    prodvers=(2,0,2,0),
     mask=0x3f,
     flags=0x0,
     OS=0x4,
@@ -17,7 +17,7 @@
           StringStruct('CompanyName', 'MAZNET Mateusz Mazur'),
           StringStruct('ProductName', 'UsageMonitor'),
           StringStruct('FileDescription', 'Monitor zuzycia CPU/RAM dla wskazanego procesu.'),
-          StringStruct('FileVersion', '2.0.1'),
+          StringStruct('FileVersion', '2.0.2'),
           StringStruct('InternalName', 'UsageMonitor'),
           StringStruct('OriginalFilename', 'UsageMonitor.exe')
         ]

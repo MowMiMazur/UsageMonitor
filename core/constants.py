@@ -1,5 +1,5 @@
 APP_NAME = "UsageMonitor"
-VERSION = "2.0.1"
+VERSION = "2.0.2"
 VERSION_TAG = ""
 
 AUTHOR_NAME = "MAZNET"

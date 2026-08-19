@@ -17,14 +17,15 @@ def app_base_dir():
 
 
 def get_process_list():
+    """[(pid, ppid, name), ...] sorted by name; ppid lets the UI build process trees."""
     processes = []
-    for proc in psutil.process_iter(['pid', 'name']):
+    for proc in psutil.process_iter(['pid', 'ppid', 'name']):
         try:
-            name = proc.info['name'] or "?"
-            processes.append((proc.info['pid'], name))
+            info = proc.info
+            processes.append((info['pid'], info['ppid'], info['name'] or "?"))
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
-    return sorted(processes, key=lambda x: x[1].lower())
+    return sorted(processes, key=lambda x: x[2].lower())
 
 
 def app_data_dir():

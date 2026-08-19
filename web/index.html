@@ -42,6 +42,15 @@
             <span data-i18n="btn.browse">Wybierz program</span>
           </button>
         </div>
+        <div class="target-chip" id="target-chip" hidden>
+          <span class="ic">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </span>
+          <span class="txt"><b id="target-chip-label">—</b><small id="target-chip-mode">—</small></span>
+          <button type="button" class="target-clear" id="target-clear" title="—">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
         <button class="btn btn--primary btn-start" id="start-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
           <span data-i18n="btn.start">Rozpocznij monitoring</span>
@@ -118,10 +127,23 @@
       <div class="modal-search">
         <input id="proc-search" data-i18n-ph="modal.searchPlaceholder" placeholder="Szukaj procesu…" autocomplete="off" />
       </div>
+      <div class="mode-row">
+        <span class="mode-label" data-i18n="modal.modeLabel">Zakres</span>
+        <div class="mode-toggle" id="mode-toggle" role="group">
+          <button type="button" data-mode="single" data-i18n="mode.single.short">Jeden</button>
+          <button type="button" data-mode="name" data-i18n="mode.name.short">Wszystkie o tej nazwie</button>
+          <button type="button" data-mode="tree" data-i18n="mode.tree.short">Z potomkami</button>
+          <button type="button" data-mode="set" data-i18n="mode.set.short">Zaznaczone</button>
+        </div>
+      </div>
+      <p class="mode-hint" id="mode-hint">—</p>
       <div class="proc-list" id="proc-list"></div>
-      <div class="modal-foot">
-        <button class="btn btn--ghost" id="proc-cancel" data-i18n="modal.cancel">Anuluj</button>
-        <button class="btn btn--primary" id="proc-select" disabled data-i18n="modal.select">Wybierz</button>
+      <div class="modal-foot proc-foot">
+        <div class="proc-summary" id="proc-summary">—</div>
+        <div class="proc-buttons">
+          <button class="btn btn--ghost" id="proc-cancel" data-i18n="modal.cancel">Anuluj</button>
+          <button class="btn btn--primary" id="proc-select" disabled data-i18n="modal.select">Wybierz</button>
+        </div>
       </div>
     </div>
   </div>
