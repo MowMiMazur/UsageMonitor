@@ -1,14 +1,16 @@
 import os
 import json
+import threading
 import webbrowser
 import subprocess
 
 import psutil
 
+from core import updates
 from core.monitor import Monitor
 from core.report import write_html_log
 from core.utils import get_process_list, app_base_dir
-from core.constants import get_full_version, AUTHOR_NAME, AUTHOR_URL
+from core.constants import get_full_version, VERSION, AUTHOR_NAME, AUTHOR_URL
 
 
 class Api:
@@ -18,6 +20,7 @@ class Api:
         self._window = None
         self._monitor = None
         self._lang = "pl"
+        self._update_thread = None
 
     def set_window(self, window):
         self._window = window
@@ -29,9 +32,26 @@ class Api:
     def get_app_info(self):
         return {
             "version": get_full_version(),
+            "version_number": VERSION,
             "author_name": AUTHOR_NAME,
             "author_url": AUTHOR_URL,
         }
+
+    def start_update_check(self, force=False):
+        """Kick off the version check off-thread; the result arrives via UM.onUpdate."""
+        if self._update_thread and self._update_thread.is_alive():
+            return {"ok": True, "pending": True}
+        thread = threading.Thread(target=self._run_update_check, args=(bool(force),), daemon=True)
+        self._update_thread = thread
+        thread.start()
+        return {"ok": True, "pending": True}
+
+    def _run_update_check(self, force):
+        try:
+            result = updates.check(force=force)
+        except Exception as e:  # the check must never take the app down
+            result = {"ok": False, "error": "network", "detail": str(e)}
+        self._js(f"window.UM && UM.onUpdate({json.dumps(result, ensure_ascii=False)});")
 
     def get_process_list(self):
         return [{"pid": pid, "name": name} for pid, name in get_process_list()]

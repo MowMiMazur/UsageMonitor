@@ -8,11 +8,12 @@ from core.constants import APP_NAME
 
 
 def _read_web(name):
-    with open(resource_path(os.path.join("web", name)), "r", encoding="utf-8") as f:
+    """Read a bundled web asset by its path relative to web/ (e.g. "css/theme.css")."""
+    with open(resource_path(os.path.join("web", *name.split("/"))), "r", encoding="utf-8") as f:
         return f.read()
 
 
-# Extra page layout (app.css is not loaded in the standalone file).
+# Extra page layout (css/app.css is not loaded in the standalone file).
 _PAGE_STYLE = """
   .page { max-width: 880px; margin: 0 auto; padding: 34px 26px 56px; }
   .rep-header { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
@@ -92,11 +93,11 @@ def write_html_log(report, logs_dir=None, lang="pl"):
         lang=html.escape(lang),
         lang_json=json.dumps(lang),
         title=f"{APP_NAME} — {html.escape(proc_name)} (PID {pid})",
-        theme_css=_read_web("theme.css"),
+        theme_css=_read_web("css/theme.css"),
         page_style=_PAGE_STYLE,
-        i18n_js=_read_web("i18n.js"),
-        charts_js=_read_web("charts.js"),
-        report_js=_read_web("report.js"),
+        i18n_js=_read_web("js/i18n.js"),
+        charts_js=_read_web("js/charts.js"),
+        report_js=_read_web("js/report.js"),
         data_json=json.dumps(report, ensure_ascii=False),
     )
 

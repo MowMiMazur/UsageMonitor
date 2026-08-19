@@ -25,3 +25,16 @@ def get_process_list():
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     return sorted(processes, key=lambda x: x[1].lower())
+
+
+def app_data_dir():
+    """Per-user writable directory for caches (the program dir may be read-only)."""
+    base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
+    if not base:
+        base = os.path.join(os.path.expanduser("~"), ".cache")
+    path = os.path.join(base, "UsageMonitor")
+    try:
+        os.makedirs(path, exist_ok=True)
+    except OSError:
+        return app_base_dir()
+    return path

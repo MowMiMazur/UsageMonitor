@@ -85,20 +85,34 @@ UsageMonitor/
 │   ├── api.py            # Most JS <-> Python (js_api)
 │   ├── monitor.py        # Pętla próbkowania (wątek w tle, bez zależności GUI)
 │   ├── report.py         # Buduje samodzielny raport HTML
+│   ├── updates.py        # Sprawdzanie nowej wersji (API maznet.pl, cache + ETag)
 │   ├── constants.py
-│   └── utils.py          # Ścieżki zasobów i lista procesów
+│   └── utils.py          # Ścieżki zasobów, katalog danych i lista procesów
 └── web/                  # Cały interfejs użytkownika
     ├── index.html        # Powłoka aplikacji (jedna strona)
-    ├── i18n.js           # Wspólny słownik PL/EN (aplikacja + raport)
-    ├── theme.css         # Wspólny system projektowy (aplikacja + raport)
-    ├── app.css / app.js  # Style i logika powłoki aplikacji
-    ├── charts.js         # Wspólny silnik wykresów SVG
-    └── report.js         # Wspólny generator raportu i podsumowania
+    ├── css/
+    │   ├── theme.css     # Wspólny system projektowy (aplikacja + raport)
+    │   └── app.css       # Style powłoki aplikacji
+    └── js/
+        ├── i18n.js       # Wspólny słownik PL/EN (aplikacja + raport)
+        ├── charts.js     # Wspólny silnik wykresów SVG
+        ├── report.js     # Wspólny generator raportu i podsumowania
+        ├── updates.js    # Modal i plakietka informujące o aktualizacji
+        └── app.js        # Logika powłoki aplikacji
 ```
 
-Pliki `web/charts.js`, `web/report.js` i `web/i18n.js` są współdzielone: ten sam kod rysuje wykresy,
-buduje podsumowania i tłumaczy interfejs w aplikacji, w raporcie w oknie programu oraz w każdym
-eksportowanym pliku HTML.
+Pliki `web/js/charts.js`, `web/js/report.js` i `web/js/i18n.js` są współdzielone: ten sam kod rysuje
+wykresy, buduje podsumowania i tłumaczy interfejs w aplikacji, w raporcie w oknie programu oraz
+w każdym eksportowanym pliku HTML.
+
+### Sprawdzanie aktualizacji
+
+Po starcie aplikacja pyta publiczne API `https://maznet.pl/api/v1/updates/usagemonitor` o najnowszą
+wersję. Zapytanie idzie w osobnym wątku, bez tokenów i bez ciasteczek; odpowiedź trafia do cache
+(`%LOCALAPPDATA%\UsageMonitor\update-cache.json`) razem z nagłówkiem `ETag`, więc kolejne sprawdzenia
+kończą się kodem 304. Sieć jest odpytywana najwyżej raz na godzinę, a limit 429 jest respektowany.
+Gdy dostępna jest nowsza wersja, pojawia się modal oraz plakietka przy numerze wersji w stopce; brak
+sieci lub błąd API nie pokazuje niczego.
 
 ### Budowanie pliku wykonywalnego
 
@@ -191,19 +205,33 @@ UsageMonitor/
 │   ├── api.py            # JS <-> Python bridge (js_api)
 │   ├── monitor.py        # Sampling loop (background thread, no GUI deps)
 │   ├── report.py         # Builds the self-contained HTML report
+│   ├── updates.py        # Version check (maznet.pl API, cache + ETag)
 │   ├── constants.py
-│   └── utils.py          # Resource paths & process list
+│   └── utils.py          # Resource paths, data dir & process list
 └── web/                  # The entire user interface
     ├── index.html        # App shell (single page)
-    ├── i18n.js           # Shared PL/EN dictionary (app + report)
-    ├── theme.css         # Shared design system (app + report)
-    ├── app.css / app.js  # App-shell styles & logic
-    ├── charts.js         # Shared SVG chart engine
-    └── report.js         # Shared report/summary renderer
+    ├── css/
+    │   ├── theme.css     # Shared design system (app + report)
+    │   └── app.css       # App-shell styles
+    └── js/
+        ├── i18n.js       # Shared PL/EN dictionary (app + report)
+        ├── charts.js     # Shared SVG chart engine
+        ├── report.js     # Shared report/summary renderer
+        ├── updates.js    # Update modal & footer badge
+        └── app.js        # App-shell logic
 ```
 
-`web/charts.js`, `web/report.js` and `web/i18n.js` are shared: the same code renders charts, summaries
-and translations in the live app, in the in-app report, and inside every exported HTML file.
+`web/js/charts.js`, `web/js/report.js` and `web/js/i18n.js` are shared: the same code renders charts,
+summaries and translations in the live app, in the in-app report, and inside every exported HTML file.
+
+### Update check
+
+On start-up the app asks the public API `https://maznet.pl/api/v1/updates/usagemonitor` for the latest
+version. The request runs on its own thread, with no tokens and no cookies; the response is cached
+(`%LOCALAPPDATA%\UsageMonitor\update-cache.json`) together with its `ETag`, so follow-up checks end in
+a 304. The network is polled at most once an hour and a 429 back-off is honoured. When a newer
+version exists, a modal appears along with a badge next to the version number in the footer; an
+offline machine or an API error shows nothing.
 
 ### Building an executable
 

@@ -25,12 +25,18 @@
     lastReportPath: null,
   };
 
+  function openExternal(url) {
+    if (!state.api) return;
+    try { state.api.open_url(url); } catch (e) {}
+  }
+
   function boot() {
     UMi18n.init("pl");
     $("#lang-mount").appendChild(UMi18n.createToggle());
     UMi18n.onChange(onLangChange);
     setStatus("ready", false);
     wireEvents();
+    UMUpdates.init({ openUrl: openExternal });
     if (window.pywebview && window.pywebview.api) onApiReady();
     else window.addEventListener("pywebviewready", onApiReady);
   }
@@ -46,6 +52,8 @@
       a.href = info.author_url;
       a.addEventListener("click", (e) => { e.preventDefault(); state.api.open_url(info.author_url); });
     } catch (e) { /* running without a backend (preview) */ }
+
+    try { state.api.start_update_check(); } catch (e) {}
   }
 
   function onLangChange(lang) {
@@ -55,6 +63,7 @@
     if (state.lastReport && $("#view-report").classList.contains("is-active")) {
       UMReport.render($("#report-root"), state.lastReport);
     }
+    UMUpdates.refresh();
   }
 
   function switchView(id) {
@@ -291,6 +300,10 @@
         return;
       }
       showReport(report);
+    },
+
+    onUpdate(result) {
+      UMUpdates.apply(result);
     },
 
     onError(err) {

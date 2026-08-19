@@ -138,6 +138,11 @@ Write-OK "PyInstaller -- OK"
 # --- [2/4] Kompilacja ---
 Write-Step "[2/4] Kompilacja PyInstaller..."
 
+# UWAGA: nie uzywamy --collect-all=webview. Ta flaga wymusza import KAZDEGO backendu
+# pywebview (qt / gtk / cef). Jesli na maszynie budujacej jest zainstalowane PyQt,
+# PySide albo cefpython3, PyInstaller wciaga caly ten stos do .exe - mimo ze aplikacja
+# na sztywno startuje z gui="edgechromium". Tak powstal plik ~200 MB zamiast ~13 MB.
+# Pliki WebView2 zbiera hook dostarczany razem z pywebview (webview/__pyinstaller).
 $args = @(
     "-m", "PyInstaller",
     "--noconfirm",
@@ -147,7 +152,19 @@ $args = @(
     "--version-file=version.txt",
     "--add-data=assets;assets",
     "--add-data=web;web",
-    "--collect-all=webview"
+    "--hidden-import=webview.platforms.edgechromium",
+    "--exclude-module=PyQt5",
+    "--exclude-module=PyQt6",
+    "--exclude-module=PySide2",
+    "--exclude-module=PySide6",
+    "--exclude-module=qtpy",
+    "--exclude-module=cefpython3",
+    "--exclude-module=gi",
+    "--exclude-module=tkinter",
+    "--exclude-module=PIL",
+    "--exclude-module=numpy",
+    "--exclude-module=pytest",
+    "--exclude-module=pydoc_data"
 )
 if (Test-Path "assets\icon.ico") { $args += "--icon=assets\icon.ico" }
 $args += "main.py"
@@ -167,7 +184,12 @@ if (-not (Test-Path $execDir)) { New-Item -ItemType Directory -Path $execDir | O
 
 $dst = "$execDir\UsageMonitor-$version.exe"
 Move-Item -Path $src -Destination $dst -Force
-Write-OK "Plik przeniesiony -> $dst"
+$sizeMB = [math]::Round((Get-Item $dst).Length / 1MB, 1)
+Write-OK "Plik przeniesiony -> $dst  ($sizeMB MB)"
+if ($sizeMB -gt 40) {
+    Write-Warn "Uwaga: .exe jest wiekszy niz oczekiwane ~13 MB. Sprawdz, czy w srodowisku"
+    Write-Warn "budowania nie ma PyQt / PySide / cefpython3 -- pywebview wciaga je jako backend."
+}
 
 # --- [4/4] Czyszczenie ---
 Write-Step "[4/4] Czyszczenie plikow tymczasowych..."
